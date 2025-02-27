@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
 from src.exceptions.exception_registration import register_exception_handlers
-from src.utils.mail import send_mail as mail
+from src.auth.routes import auth_router
 
 VERSION = "v1"
 BASE_URL = f"/api/{VERSION}"
@@ -12,9 +12,11 @@ app = FastAPI(
     debug=True,
     contact={"email": "sunarsushil100@gmail.com"},
     version=VERSION,
-    docs_url=f"{BASE_URL}/docs",
     root_path=BASE_URL,
 )
 
 # registering all the exceptions
 register_exception_handlers(app=app)
+
+# adding all the routers
+app.include_router(auth_router, prefix="/auth", tags=["auth"])
