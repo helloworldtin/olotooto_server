@@ -2,7 +2,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.requests import Request
 
 from .utils import decode_jwt_token
-from src.exceptions.exceptions import (
+from core.exceptions.exceptions import (
     InvalidToken,
     RefreshTokenRequired,
     AccessTokenRequired,

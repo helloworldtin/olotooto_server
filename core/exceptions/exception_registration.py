@@ -145,3 +145,21 @@ def register_exception_handlers(app: FastAPI) -> None:
             },
         ),
     )
+    app.add_exception_handler(
+        TagAlreadyExist,
+        create_exception_handler(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "message": "This tag is already exist don't need to create",
+            },
+        ),
+    )
+    app.add_exception_handler(
+        PostNotFound,
+        create_exception_handler(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "message": "Post not found",
+            },
+        ),
+    )

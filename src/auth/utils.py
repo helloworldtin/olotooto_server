@@ -5,7 +5,7 @@ from jwt.exceptions import PyJWTError, ExpiredSignatureError
 import random
 from datetime import datetime, timedelta, timezone
 
-from src.exceptions.exceptions import InterServerException, InvalidToken, ExpiredToken
+from core.exceptions.exceptions import InterServerException, InvalidToken, ExpiredToken
 from src.config import Config
 
 

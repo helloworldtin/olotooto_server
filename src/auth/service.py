@@ -5,7 +5,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from sqlalchemy.exc import IntegrityError
 
-from datetime import timedelta
+from datetime import timedelta, datetime
 from uuid import UUID
 
 from .schemas import (
@@ -24,15 +24,15 @@ from .utils import (
 )
 
 
-from src.database.models import User, UserLinkModel
-from src.database.cloudinary import upload_file, delete_file
-from src.database.redis import (
+from core.database.models import User, UserLinkModel
+from core.database.cloudinary import upload_file, delete_file
+from core.database.redis import (
     put_data_in_redis,
     get_data_from_redis,
     delete_data_from_redis,
 )
-from src.utils.mail import send_mail
-from src.exceptions.exceptions import (
+from core.utils.mail import send_mail
+from core.exceptions.exceptions import (
     UserAlreadyExist,
     UserNameAlreadyTaken,
     InterServerException,
@@ -44,13 +44,22 @@ from src.exceptions.exceptions import (
     AlreadyFollowed,
 )
 
-USER_PROFILE_FOLDER = "users/profile/"
+
+def get_profile_path(full_name: str):
+    return f"users/{full_name}/profiles"
 
 
-class AuthController:
+class AuthService:
     async def get_user_by_email(self, email: str, session: AsyncSession) -> User | None:
         try:
-            statement = select(User).where(User.email == email)
+            statement = (
+                select(User)
+                .where(User.email == email)
+                .options(selectinload(User.followers))
+                .options(selectinload(User.following))
+                .options(selectinload(User.posts))
+            )
+
             user = await session.exec(statement=statement)
             return user.first()
         except Exception as e:
@@ -61,7 +70,13 @@ class AuthController:
         self, username: str, session: AsyncSession
     ) -> User | None:
         try:
-            statement = select(User).where(User.username == username)
+            statement = (
+                select(User)
+                .where(User.username == username)
+                .options(selectinload(User.followers))
+                .options(selectinload(User.following))
+                .options(selectinload(User.posts))
+            )
             user = await session.exec(statement=statement)
             return user.first()
         except Exception as e:
@@ -103,7 +118,7 @@ class AuthController:
             # upload file to the cloudinary
             new_user.profile_url = await upload_file(
                 user_data.profile_file,
-                USER_PROFILE_FOLDER,
+                get_profile_path(new_user.full_name),
             )
             otp_code = generate_otp()
 
@@ -113,6 +128,7 @@ class AuthController:
             # adding data to database
             session.add(new_user)
             await session.commit()
+            await session.refresh(new_user)
 
             # send otp code to user email for verification
             background_task.add_task(
@@ -263,9 +279,14 @@ class AuthController:
             if user is None:
                 raise UserNotFound()
             # delete user old profile
-            await delete_file(user.profile_url, USER_PROFILE_FOLDER)
-            new_profile_url = await upload_file(new_profile_file, USER_PROFILE_FOLDER)
+            profile_folder = get_profile_path(user.full_name)
+            await delete_file(
+                user.profile_url,
+                profile_folder,
+            )
+            new_profile_url = await upload_file(new_profile_file, profile_folder)
             user.profile_url = new_profile_url
+            user.updated_at = datetime.now()
             await session.commit()
             await session.refresh(user)
             return user
@@ -296,6 +317,7 @@ class AuthController:
                             raise UserNameAlreadyTaken()
                     # replacing value if change
                     setattr(user, k, v)
+                    user.updated_at = datetime.now()
                     await session.commit()
                     await session.refresh(user)
             return user
@@ -327,6 +349,7 @@ class AuthController:
             ):
                 return {"message": "Same password no need to change"}
             user.hashed_password = new_password_hashed
+            user.updated_at = datetime.now()
             await session.commit()
             return {"message": "Password updated successfully"}
         except (InvalidToken, InvalidCredentials):
@@ -337,7 +360,13 @@ class AuthController:
 
     async def search_users(self, search_key: str, session: AsyncSession) -> list[User]:
         try:
-            statement = select(User).where(User.full_name.ilike(f"{search_key}%"))
+            statement = (
+                select(User)
+                .options(selectinload(User.following))
+                .options(selectinload(User.followers))
+                .options(selectinload(User.posts))
+                .where(User.full_name.ilike(f"{search_key}%"))
+            )
             users = await session.exec(statement)
             return users.all()
         except Exception as e:
@@ -347,16 +376,7 @@ class AuthController:
     async def get_current_user(self, user_data: dict, session: AsyncSession) -> User:
         try:
             username = user_data["user_data"]["username"]
-            statement = (
-                select(User)
-                .where(User.username == username)
-                .options(selectinload(User.followers))
-                .options(selectinload(User.following))
-            )
-
-            result = await session.exec(statement)
-            user = result.first()
-
+            user = await self.get_user_by_username(username, session)
             if not user:
                 raise InvalidToken()
             return user
@@ -442,4 +462,4 @@ class AuthController:
             raise InterServerException()
 
 
-auth_controller = AuthController()
+auth_service = AuthService()

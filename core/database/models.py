@@ -15,7 +15,7 @@ from sqlmodel import (
 import uuid
 import datetime
 
-from src.utils.enums import GenderEnum
+from core.utils.enums import GenderEnum
 
 # for users
 
@@ -243,6 +243,7 @@ class Post(SQLModel, table=True):
         link_model=TagAndPostLinkModel,
         sa_relationship_kwargs={"lazy": "selectin"},
     )
+    post_image_url: str = Field(nullable=False)
     user_uid: uuid.UUID = Field(
         sa_column=Column(UUID, ForeignKey("users.uid"), nullable=False)
     )

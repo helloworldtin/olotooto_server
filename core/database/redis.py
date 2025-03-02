@@ -1,7 +1,7 @@
 from redis.asyncio import Redis
 
 from src.config import Config
-from src.exceptions.exceptions import InterServerException
+from core.exceptions.exceptions import InterServerException
 
 redis = Redis.from_url(Config.REDIS_URL)
 

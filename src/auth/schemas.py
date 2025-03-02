@@ -1,38 +1,8 @@
 from fastapi import UploadFile
 from pydantic import BaseModel, EmailStr
-from src.utils.enums import GenderEnum
+from core.utils.enums import GenderEnum
 
-from datetime import date, datetime
-from uuid import UUID
-
-
-class UserModel(BaseModel):
-    uid: UUID
-    full_name: str
-    email: str
-    gender: GenderEnum
-    profile_url: str
-    dob: date
-    about: str
-    username: str
-    created_at: datetime
-    updated_at: datetime
-
-
-class UserModelWithLists(BaseModel):
-    uid: UUID
-    full_name: str
-    email: str
-    gender: GenderEnum
-    profile_url: str
-    dob: date
-    about: str
-    username: str
-    # posts: list[str]
-    following: list["UserModel"]
-    followers: list["UserModel"]
-    created_at: datetime
-    updated_at: datetime
+from datetime import date
 
 
 class CreteUserModel(BaseModel):

@@ -5,7 +5,7 @@ from fastapi import UploadFile
 import asyncio
 
 from src.config import Config
-from src.exceptions.exceptions import InterServerException
+from core.exceptions.exceptions import InterServerException
 
 config = cloudinary.config(
     cloud_name=Config.CLOUD_NAME,
@@ -34,7 +34,7 @@ async def delete_file(url: str, folder_path: str) -> None:
         public_id = f"{folder_path}{url.split("/")[-1].split(".")[0]}"
         result: dict = await asyncio.to_thread(uploader.destroy, public_id)
         if result["result"] != "ok":
-            raise Exception("Error wile deleting file")
+            raise Exception("Error wile deleting file", result)
         return None
     except Exception as e:
         print(f"Error while deleting file: {e}")

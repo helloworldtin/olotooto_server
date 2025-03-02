@@ -53,3 +53,11 @@ class AlreadyFollowed(AppException):
 
 class InvalidOperation(AppException):
     """User try to perform silly operations"""
+
+
+class TagAlreadyExist(AppException):
+    """Frontend is trying to make tag which is already exist"""
+
+
+class PostNotFound(AppException):
+    """Will get when try to get unavailable post"""
